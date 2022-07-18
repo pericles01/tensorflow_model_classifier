@@ -1,0 +1,167 @@
+
+# ------------------------------------- Base arguments ------------------------------------- #
+subscription: 
+
+resource_group: 
+
+experiment: anonymisation-MCC
+
+workspace: 
+
+environment: classifier
+
+docker_image: 
+
+#container registry in the workspace
+#for private containers specify username and password
+container_registry: 
+  address: 
+  #username:
+  #password:
+
+datastore: 
+
+indir: ../endo_out_binary_v2/trainset
+#help="Directory of training or testing data"
+
+outdir: ../model_generator_results/train
+#help="Output Directory of training or testing"
+
+#valdata:
+#help="Directory of validation data. If not defined data will be split into train+val"
+
+dim: 224
+#help="Dimensions of input images after preprocessing (NxN). The user can also input a list of dimensions [H, B]",
+#type=int or list,
+#default=224)
+
+resize: center-crop
+#help="Type of resizing for classification and segmentation,For detection, its fixed at pad resizing",
+#choices=['center-crop', 'padding', 'downscale'],
+#default='center-crop'
+
+#check_data: True
+#help="Check if all samples in dataset can be processed",
+#action='store_true'
+#default= False
+
+class_names: ['00_safe', '01_critical']
+#help="Define class names to include in plots and logs. e.g. --class_names 00_Out 01_In 02_no_sig",
+#nargs='+')
+
+#model_name:
+#help="Name of the model to register in Azure ML",
+#default=""
+
+#commit_hash: ''
+#help="Git commit hash attributed to the current repository. !! automatically filled !! ",
+#default=""
+
+# ------------------------------------- Azureml arguments ------------------------------------- #
+
+#azureml_flag: True
+#help="parameter to recognize that the scripts are running on azureml. !! automatically filled !!",
+#type=bool
+#default=False
+
+#class_names_azureml: ['00_patient_present', '01_patient_absent']
+#help="parameter to hold the list of class names being passed to azure. !! automatically filled !!",
+#default=None)
+
+# ------------------------------------- Model arguments ------------------------------------- #
+backbone: ResNet50
+#help="Name of the model's backbone",
+#choices=['MobileNet', 'MobileNetV2', 'Xception', 'NASNetMobile', 'DenseNet121', 'DarkNet',
+         #'ResNet18', 'ResNet34', 'ResNet50', 'ResNeXt50', 'ResNet50V2',
+         #'SEResNet18', 'SEResNet34', 'SEResNet50', 'SEResNeXt50',
+         #'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
+         #'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7'],
+#default='')
+
+#head: Yolo
+#help="Type of detection head",
+#choices=['Yolo', 'YoloTiny'],
+#default='Yolo')
+
+#pooling: avg
+#help="Type of pooling",
+#default='avg'
+
+num_classes: 2
+#type=int,
+#default=2)
+
+#num_labels: 0
+#help="Specify number of labels. ONLY for multi-label classification",
+#type=int,
+#default=0)
+
+# ------------------------------------- Training arguments ------------------------------------- #
+epochs: 5
+#help="Number of training epochs",
+#type=int,
+#default=10)
+
+batch: 16
+#help="Batch size",
+#type=int,
+#default=16)
+
+validation_split: 0.25
+#type=float,
+#default=0.1)
+
+lr: 0.02
+#help="Initial learning rate for Adam optimizer",
+#type=float,
+#default=0.001)
+
+#lr_decay: False
+#help="Learning rate step decay for Adam optimizer",
+#action='store_true')
+
+dropout: 0.25
+#help="dropout rate on the classifiers' densly connected head",
+#type=float,
+#default=0)
+
+augment: 
+  - Rotate:
+    - p = 0.7
+    - limit = 90
+  - Flip:
+    - p = 0.7
+  - RandomResizedCrop:
+    - height = 224
+    - width = 224
+    - p = 0.7
+  - MotionBlur:
+    - p = 0.7
+  - RandomBrightnessContrast:
+    - p = 0.7
+    - brightness_limit = 0.3
+    - contrast_limit = 0.3
+  - ColorJitter:
+    - p = 0.7
+
+#label_smoothing: False
+#help="Smooth labels for binary/multi-class classification",
+#action='store_true')
+
+#train_backbone: False
+#help="Train encoder parameters",
+#action='store_true')
+
+#kmeans: False
+#help="Apply k-means clustering on a dataset of bounding boxes to generate custom anchors",
+#action='store_true')
+
+#bayesian: None
+#help="dropout-rate for monte carlo dropout layers added before each trainable layer",
+#type=float,
+#default=None)
+
+#bayesian_samples: 10
+#help="number of bayesian samples to evaluate",
+#type=int,
+#default=10)
