@@ -21,13 +21,13 @@ container_registry:
 
 datastore: kzsdpstage
 
-dataset: DRV/Anonymization/Besucherzentrum_Out_Seqs/endo_out_binary_v2/testset
+dataset: ../endo_out_binary_v2/testset
 #help="Directory of training or testing data"
 
-output: MOD/model_generator_results/interpret
+output: ../model_generator_results/interpret
 #help="Output Directory of training or testing"
 
-saved_model: MOD/model_generator_results/train/anonymisation-classification_1656324342_35333b0d/models/20220627-100737
+saved_model: ../model_generator_results/train/models/20220627-100737
 #help="Directory of the saved model. Used for test.py",
 #default=""
 

@@ -1,7 +1,7 @@
 """Description
    -----------
 This script is used to train classification and segmentation models
- based on MobileNet, Resnet and DenseNet architectures
+ based on MobileNet, Resnet and DenseNet architectures and log metrics using mlflow
 
 
 Parameters
@@ -36,17 +36,24 @@ from utils import misc, sched, augment
 from dataset import DataPaths, ClassificationDataset #, transforms
 import models
 import argparse
-from azureml.core import Run
 from main_experiment import Exp
+import mlflow
+import mlflow.tensorflow
+import logging
+
+def setup_logger():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
 
 
-def train(conf, local=False):
+def train(conf):
 
     args = Exp(conf)
-    
-    #local train
-    if not local:
-        azure_tags(args)
 
     # Define GPU devices and allow memory growth
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -76,22 +83,24 @@ def train(conf, local=False):
     logdir = path.join(args.outdir, "logs", start_time_stamp)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=0)
     lr_callback = sched.step_lr_decay(args=args)
-    # Train
-    history = model.model.fit(
-            train_data.dataset,
-            steps_per_epoch=train_samples // args.batch,
-            validation_data=valid_data.dataset,
-            validation_steps=valid_samples // args.batch,
-            epochs=args.epochs,
-            callbacks=[tensorboard_callback, lr_callback]
-        )
-    if not local:
-        #log metrics to azure
-        history_log = history.history
-        for keys in history_log:
-            history_log[keys] = [float(x) for x in history_log[keys]]
-            run.log_list(str(keys), history_log[keys])
-        
+    with mlflow.start_run():
+        mlflow.tensorflow.autolog()
+        # Train
+        history = model.model.fit(
+                train_data.dataset,
+                steps_per_epoch=train_samples // args.batch,
+                validation_data=valid_data.dataset,
+                validation_steps=valid_samples // args.batch,
+                epochs=args.epochs,
+                callbacks=[tensorboard_callback, lr_callback]
+            )
+         
+        # history_log = history.history
+        # for keys in history_log:
+        #     history_log[keys] = [float(x) for x in history_log[keys]]
+        #     #log metrics to mlflow
+        #     mlflow.log_params(history_log)
+          
     # Save model, training parameters, logs and weights
     end_time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -112,76 +121,19 @@ def train(conf, local=False):
     tf.saved_model.save(model.model, save_path)
     model.model.save_weights(save_path + "/weights.h5")
 
-    print("Model saved in " + save_path)
-
-    
-def azure_tags(exp):
-
-    # ------------------------------------- Base arguments ------------------------------------- #
-
-    run.tag('task', "classification train")
-    if exp.dim:
-         run.tag('dim', exp.dim)
-    if exp.resize:
-        run.tag('resize', exp.resize)
-    if exp.check_data:
-        run.tag('check_data', exp.check_data)
-    if exp.class_names:
-        run.tag('class_names', exp.class_names)
-    if exp.commit_hash:
-        run.tag('commit_hash', exp.commit_hash)
-    # ------------------------------------- Model arguments ------------------------------------- #
-    if exp.backbone:
-        run.tag('backbone', exp.backbone)
-    if exp.head:
-        run.tag('head', exp.head)
-    if exp.pooling:
-        run.tag('pooling', exp.pooling)
-    if exp.num_classes:
-        run.tag('num_classes', exp.num_classes)
-    if exp.num_labels:
-        run.tag('num_labels', exp.num_labels)
-    # ------------------------------------- Training arguments ------------------------------------- #
-    if exp.epochs:
-        run.tag('epochs', exp.epochs)
-    if exp.batch:
-        run.tag('batch', exp.batch)
-    if exp.validation_split:
-        run.tag('validation_split', exp.validation_split)
-    if exp.lr:
-        run.tag('lr', exp.lr)
-    if exp.lr_decay:
-        run.tag('lr_decay', exp.lr_decay)
-    if exp.dropout:
-        run.tag('dropout', exp.dropout)
-    if len(exp.augment) > 0:
-        run.tag('augmentation', exp.augment)
-    else:
-        run.tag('augmentation', "None")
-    if exp.label_smoothing:
-        run.tag('label_smoothing', exp.label_smoothing)
-    if exp.train_backbone:
-        run.tag('train_backbone', exp.train_backbone)
-    if exp.kmeans:
-        run.tag('kmeans', exp.kmeans)
-    if exp.bayesian:
-        run.tag('bayesian', exp.bayesian)
-    if exp.bayesian_samples:
-        run.tag('bayesian_samples', exp.bayesian_samples)
+    logging.info("Model saved in " + save_path)
 
 if __name__ == '__main__':
     # Need only these to be parsed because they are dynamically created by azureml SDK
     # All options are defined in the yaml file passed with --config
     parser = argparse.ArgumentParser()
-    parser.add_argument('--indir', type=str, help="input data directory")
-    parser.add_argument('--valdata', type=str, help="input validation data directory")
-    parser.add_argument('--outdir', type=str, help="output data directory")
-    parser.add_argument('--saved_model', type=str, help="saved model directory")
-    parser.add_argument('--ckpt', type=str, default=None, help="path to model weight file (for pretrained weights)")
-    parser.add_argument('--config', type=str, default='run_config.yml', help="path to config file of the experiment")
+    parser.add_argument('--config', type=str, help="path to config file of the experiment")
     args = parser.parse_args()
+    setup_logger()
 
-    run = Run.get_context()
+    logging.info('Using config ' + args.config)
+
+    mlflow.set_experiment("mlflow-test-1")
     
     from experiment_config import ExperimentConfig
     conf = ExperimentConfig(args.config)

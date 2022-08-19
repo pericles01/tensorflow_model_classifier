@@ -26,7 +26,7 @@ from datetime import datetime
 from azureml.core import Run
 
 
-def confusion_matrix(cm_input, labels, savepath, title='Confusion matrix', normalize=True, cmap='Blues'):
+def confusion_matrix(cm_input, labels, savepath, title='Confusion matrix', normalize=True, cmap='Blues', local=False):
     """
     Create a confusion matrix plot
     :param cm_input: np.array of tps, tns, fps and fns
@@ -65,9 +65,9 @@ def confusion_matrix(cm_input, labels, savepath, title='Confusion matrix', norma
     plt.ylabel('True label', fontsize=font_size)
     plt.xlabel('Predicted label', fontsize=font_size)
     plt.tight_layout()
-
-    run = Run.get_context()
-    run.log_image("Confusion Matrix", plot=plt)
+    if not local:
+        run = Run.get_context()
+        run.log_image("Confusion Matrix", plot=plt)
     
     if savepath:
         plt.savefig(savepath, bbox_inches='tight')

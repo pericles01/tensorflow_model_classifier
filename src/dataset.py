@@ -246,7 +246,7 @@ class ClassificationDataset:
     Class to create tf.data instance for classification dataset, parse images and ground truths and batch samples
     """
 
-    def __init__(self, img_paths, gts, args, batch=None, split='train', trials=None):
+    def __init__(self, img_paths, gts, args, split='train', optuna_tfms=False, trial=None, batch=None):
         """
         :param img_paths: paths to target images
         :param gts: ground truths
@@ -259,10 +259,11 @@ class ClassificationDataset:
         self.label_smoothing_flag = args.label_smoothing
         self.label_precision = tf.float16 if self.label_smoothing_flag else tf.int32
         self.preprocess_input = InputNormalization(args.backbone).normalization_function
-        if trials is None:
+
+        if trial is None:
             self.transforms = augment.generate_augmentation(args)
         else:
-            self.transforms = augment.generate_augmentation(args, trials)
+            self.transforms = augment.optuna_aug_tfms(optuna_tfms=optuna_tfms, trial=trial)
              
         if self.label_smoothing_flag:
             if self.num_classes == 2:
@@ -280,7 +281,7 @@ class ClassificationDataset:
             self.dataset = self.dataset.map(self.valid_preprocess, num_parallel_calls=autotune)
         else:
             self.dataset = self.dataset.map(self.augment, num_parallel_calls=autotune)
-        if batch is None:
+        if trial is None:
             self.dataset = self.dataset.batch(args.batch)
         else:
             self.dataset = self.dataset.batch(batch)

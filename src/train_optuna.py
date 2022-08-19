@@ -41,9 +41,12 @@ from main_experiment import Exp
 import optuna
 from optuna.integration import KerasPruningCallback
 from optuna.trial import TrialState
+#import mlflow
+#import mlflow.tensorflow
+#from mlflow.tracking import get_tracking_uri
 
 
-def train(trial):
+def train(trial) -> float:
     
     # Clear clutter from previous Keras session graphs.
     tf.keras.backend.clear_session()
@@ -55,63 +58,72 @@ def train(trial):
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
+    # Start a new mlflow run
+    #with mlflow.start_run(run_name="mlflow-optuna-test") as run:
+    
     # Create dataset
-    data_paths = DataPaths(args=args)
-    train_data = ClassificationDataset(data_paths.train_img, data_paths.train_gt, args, batch=trial.suggest_int("Batch size", low=8, high=64, step=8), 
-                    trials=trial.suggest_float('augmentation_p', low=0.1, high=0.9, step=0.2, log=False))
-    valid_data = ClassificationDataset(data_paths.valid_img, data_paths.valid_gt, args, batch=trial.suggest_int("Batch size", low=8, high=64, step=8), split='validation', 
-                    trials=trial.suggest_float('augmentation_p', low=0.1, high=0.9, step=0.2, log=False))
-
-    train_samples = len(data_paths.train_img)
-    valid_samples = len(data_paths.valid_img)
-    print("Training samples: " + str(train_samples))
-    print("Validation samples: " + str(valid_samples))
+    apply_tfms = trial.suggest_categorical("apply_tfms", [True, False])
+    batch = trial.suggest_int("Batch size", low=8, high=64, step=8)
+    train_data = ClassificationDataset(data_paths.train_img, data_paths.train_gt, args, optuna_tfms=apply_tfms, trial=trial, batch=batch)
+    valid_data = ClassificationDataset(data_paths.valid_img, data_paths.valid_gt, args, split='validation', optuna_tfms=apply_tfms, trial=trial, batch=batch)
 
     # Create model
     strategy = tf.distribute.MirroredStrategy()
     with strategy.scope():
         model = models.Classification(model_name=args.backbone, dims=args.dim,
-                                        lr=trial.suggest_float("learning_rate", low=1e-3, high=1e-1, log=True), loss=args.loss, train_backbone=args.train_backbone,
-                                        num_classes=args.num_classes, num_labels=args.num_labels,
-                                        dropout=args.dropout, bayesian=args.bayesian)
+                                            lr=trial.suggest_float("learning_rate", low=1e-3, high=1e-1, log=True), loss=args.loss, train_backbone=args.train_backbone,
+                                            num_classes=args.num_classes, num_labels=args.num_labels,
+                                            dropout=args.dropout, bayesian=args.bayesian)
 
     # Setup logging path and learning decay scheduler
     start_time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = path.join(args.outdir, "logs", start_time_stamp)
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=0)
     lr_callback = sched.step_lr_decay(args=args)
+
+    # # Enable auto-logging to MLflow to capture TensorBoard metrics.
+    # mlflow.tensorflow.autolog()
+
     # Train
     history = model.model.fit(
-            train_data.dataset,
-            steps_per_epoch=train_samples // trial.suggest_int("Batch size", low=8, high=64, step=8),
-            validation_data=valid_data.dataset,
-            validation_steps=valid_samples // trial.suggest_int("Batch size", low=8, high=64, step=8),
-            epochs=trial.suggest_int("Number of training epochs", low=10, high=50, step=5),
-            callbacks=[tensorboard_callback, lr_callback]
-        )
-    #log metrics to azure
+                train_data.dataset,
+                steps_per_epoch=train_samples // batch,
+                validation_data=valid_data.dataset,
+                validation_steps=valid_samples // batch,
+                epochs=trial.suggest_int("Number of training epochs", low=10, high=50, step=5),
+                callbacks=[tensorboard_callback, lr_callback]
+            )
+        
     history_log = history.history
-    # for keys in history_log:
-    #     history_log[keys] = [float(x) for x in history_log[keys]]
-    #     run.log_list(str(keys), history_log[keys])
 
-    target_metrics = [float(x) for x in history_log["val_MatthewsCorrelationCoefficient"]]
+        # #log to mlflow
+        # mlflow.log_params(history_log)
+
+        # # Get hyperparameter suggestions created by Optuna and log them as params using mlflow
+        # mlflow.log_params(trial.params)
+
+        # #log metrics to azurew
+        # for keys in history_log:
+        #     history_log[keys] = [float(x) for x in history_log[keys]]
+        #     run.log_list(str(keys), history_log[keys])
+
+    target_metrics = [float(x) for x in history_log["val_CustomMccMetric"]]
     target_metrics.sort()
 
-    # Save model, training parameters, logs and weights
-    # end_time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        # Save model, training parameters, logs and weights
+        # end_time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    # model_path = os.path.join(args.outdir, "models")
-    # if not os.path.exists(model_path):
-    #     os.makedirs(model_path, exist_ok=True)
+        # model_path = os.path.join(args.outdir, "models")
+        # if not os.path.exists(model_path):
+        #     os.makedirs(model_path, exist_ok=True)
 
-    # save_path = os.path.join(model_path, start_time_stamp)
-    # if not os.path.exists(save_path):
-    #     os.makedirs(save_path, exist_ok=True)
+        # save_path = os.path.join(model_path, start_time_stamp)
+        # if not os.path.exists(save_path):
+        #     os.makedirs(save_path, exist_ok=True)
+            
+        # misc.create_model_fit_history_log_file(history.history,
+        #                                            os.path.join(save_path, 'train_log.json'))
         
-    # misc.create_model_fit_history_log_file(history.history,
-    #                                            os.path.join(save_path, 'train_log.json'))
-    
     #returns the max value of the list
     return target_metrics[-1]
 
@@ -185,11 +197,25 @@ if __name__ == '__main__':
     conf.add(args)
     args = Exp(conf)
 
+    #fetch training and validation data paths
+    data_paths = DataPaths(args=args)
+    train_samples = len(data_paths.train_img)
+    valid_samples = len(data_paths.valid_img)
+    print("Training samples: " + str(train_samples))
+    print("Validation samples: " + str(valid_samples))
+
+    #mlflow tracking
+    # if args.experiment:
+    #     mlflow.set_experiment(args.experiment)
+    # if args.azureml_mlflow_uri:
+    #     mlflow.set_tracking_uri(args.azureml_mlflow_uri)
+
     study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner())
-    study.optimize(train, n_trials=10)
+    study.optimize(train, n_trials=args.optuna_trials)
 
     pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
     complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
+
     print("Study statistics: ")
     print("  Number of finished trials: ", len(study.trials))
     print("  Number of pruned trials: ", len(pruned_trials))
@@ -202,5 +228,7 @@ if __name__ == '__main__':
     print("  Params: ")
     for key, value in trial.params.items():
         print("    {}: {}".format(key, value))
+    
+    # print("mlflow tracking URI: ", get_tracking_uri())
 
     

@@ -5,7 +5,7 @@ architecture generation, compilation and optimization
 """
 import tensorflow as tf
 from tensorflow.keras import models, layers, Model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam #, RMSprop
 import importlib
 import numpy as np
 import os
@@ -114,22 +114,36 @@ class Classification(object):
         _model.trainable = self.train_backbone
         last_layer = _model.layers[-1].output
 
+        for layer in _model.layers[-50 :]:
+            layer.trainable = True
+            print(layer.name)
+
+
         if dropout > 0:
-            last_layer = layers.Dropout(rate=dropout, name="top_dropout")(last_layer)
+            last_layer = layers.Dropout(rate=dropout, name="dropout_1")(last_layer)
+        last_layer = layers.BatchNormalization(name="BatchNormalization_1")(last_layer)
+        last_layer = layers.Dense(20, activation = "relu", name="Dense_1")(last_layer)
+        if dropout > 0:
+            last_layer = layers.Dropout(rate=dropout, name="dropout_2")(last_layer)
+        last_layer = layers.BatchNormalization(name="BatchNormalization_2")(last_layer)
 
         if self.num_labels > 0:
-            output = layers.Dense(self.num_labels, activation='sigmoid')(last_layer)
+            output = layers.Dense(self.num_labels, activation="sigmoid", name='Last_sigmoid')(last_layer)
         elif self.num_classes == 2:
-            output = layers.Dense(1, activation='sigmoid')(last_layer)
+            output = layers.Dense(1, activation='sigmoid', name='Last_sigmoid')(last_layer)
         elif self.num_classes > 2:
-            output = layers.Dense(self.num_classes, activation='softmax')(last_layer)
+            output = layers.Dense(self.num_classes, activation='softmax', name='Last_softmax')(last_layer)
         else:
             raise Exception("Expected two classes or more")
         self.model = Model(inputs=_model.input, outputs=output)
 
         if self.bayesian:
             self.model = bayesify(self.model, dropout_prob=self.bayesian)
-        self.optimizer = Adam(learning_rate=self.lr)
+
+        self.optimizer = Adam(learning_rate=self.lr, beta_1 = 0.1)
+        #self.optimizer = Adam(learning_rate=self.lr)
+        #self.optimizer = RMSprop(learning_rate=self.lr, rho = 0.2, momentum = 0.1)
+        self.model.summary()
         self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=self.metric)
 
     def to_functional(self):

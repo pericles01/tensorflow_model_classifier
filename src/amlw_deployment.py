@@ -124,7 +124,7 @@ class AMLWDeployment:
         return env
 
     
-    #def conda_environment(self, env_name="classifier", yaml_file_path='./environment_tf2.4.yml') -> AzureAccess:
+    #def _conda_environment(self, env_name="classifier", yaml_file_path='./environment_tf2.4.yml') -> AzureAccess:
     #    try:
     #       env = Environment.from_conda_specification(name = env_name,
     #                                         file_path = yaml_file_path)

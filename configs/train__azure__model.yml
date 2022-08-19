@@ -1,30 +1,30 @@
 
 # ------------------------------------- Base arguments ------------------------------------- #
-subscription: 
+subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
 
-resource_group: 
+resource_group: rg-dss-playground
 
-experiment: 
+experiment: anonymisation-MCC
 
-workspace: 
+workspace: ml-playground
 
 environment: classifier
 
-docker_image: 
+docker_image: azureml/azureml_aa611e280d9bfe93f6623971723b9e7b:latest
 
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: 
+  address: 1b25a665dcb5497a8abbc94e1eb67efb.azurecr.io
   #username:
   #password:
 
-datastore: 
+datastore: kzsdpstage
 
-dataset: endo_out_binary_v2/trainset
+dataset: DRV/Anonymization/Besucherzentrum_Out_Seqs/endo_out_binary_v2/trainset
 #help="Directory of training or testing data"
 
-output: model_generator_results/train
+output: MOD/model_generator_results/train
 #help="Output Directory of training or testing"
 
 #valdata:
@@ -126,23 +126,18 @@ dropout: 0.25
 #default=0)
 
 augment: 
-  - Rotate:
-    - p = 0.7
-    - limit = 90
+  - RandomRotate90:
+    - p = 0.4
   - Flip:
     - p = 0.7
-  - RandomResizedCrop:
-    - height = 224
-    - width = 224
-    - p = 0.7
   - MotionBlur:
-    - p = 0.7
+    - p = 0.4
   - RandomBrightnessContrast:
     - p = 0.7
     - brightness_limit = 0.3
     - contrast_limit = 0.3
   - ColorJitter:
-    - p = 0.7
+    - p = 0.3
 
 #label_smoothing: False
 #help="Smooth labels for binary/multi-class classification",

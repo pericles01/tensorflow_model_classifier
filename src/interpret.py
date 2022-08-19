@@ -355,10 +355,10 @@ class TFKerasVisMethods:
 
         raise ValueError("Model does not seem to contain 4D layer. Grad CAM cannot be applied.")
 
-def interpret(conf):
+def interpret(conf, local=False):
     args = Exp(conf)
-
-    azure_tags(args)
+    if not local:
+        azure_tags(args)
 
     interpreter_input = InterpreterInput(args)
 

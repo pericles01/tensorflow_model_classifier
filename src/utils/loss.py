@@ -74,12 +74,12 @@ class CustomMccMetric(tf.keras.metrics.Metric):
         self.FP = tf.reduce_sum(value_FP)
         self.FN = tf.reduce_sum(value_FN)
 
-        print(f"y_true: {y_true}, y_pred: {y_pred}")
-        print(" ")
-        print(f"TP: {self.TP}")
-        print(f"TN: {self.TN}")
-        print(f"FP: {self.FP}")
-        print(f"FN: {self.FN}")
+        # print(f"y_true: {y_true}, y_pred: {y_pred}")
+        # print(" ")
+        # print(f"TP: {self.TP}")
+        # print(f"TN: {self.TN}")
+        # print(f"FP: {self.FP}")
+        # print(f"FN: {self.FN}")
     
     def result(self):
 
@@ -119,12 +119,10 @@ def get_metrics(num_classes, num_labels=0):
                 tfa.metrics.F1Score(num_classes=num_classes, average="macro", name='f1_macro'),
                 tfa.metrics.F1Score(num_classes=num_classes, average="weighted", name='f1_weighted')]
     else:
-        #return ['accuracy', tfa.metrics.F1Score(num_classes=1, threshold=0.5, average="micro", name='f1_binary')]
-        return ['accuracy', tfa.metrics.MatthewsCorrelationCoefficient(num_classes=1, name = 'MatthewsCorrelationCoefficient') 
-                #,CustomMccMetric(num_classes=num_classes)
-                ]
-        
-
+        return ['accuracy', tfa.metrics.F1Score(num_classes=1, threshold=0.5, average="micro", name='f1_binary')]
+        # return ['accuracy', tfa.metrics.MatthewsCorrelationCoefficient(num_classes=1, name = 'MatthewsCorrelationCoefficient') 
+        #         ,CustomMccMetric(num_classes=num_classes)
+        #         ]
 
 
 def f1_micro_loss_seg(y_true, y_pred):

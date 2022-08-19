@@ -15,6 +15,9 @@ class Exp:
         self.check_data = conf.get('check_data', False)
         self.class_names = conf.get('class_names', None)
         self.commit_hash = conf.get('commit_hash', None)
+        self.experiment = conf.get('experiment', None)
+        self.azureml_mlflow_uri = conf.get('azureml_mlflow_uri', None)
+        self.optuna_trials = conf.get('optuna_trials', 10)
         # ------------------------------------- Azureml arguments ------------------------------------- #
         self.indir = conf.get('indir', None)
         self.outdir = conf.get('outdir', None)

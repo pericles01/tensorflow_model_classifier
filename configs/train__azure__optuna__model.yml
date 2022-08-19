@@ -1,34 +1,41 @@
 
 # ------------------------------------- Base arguments ------------------------------------- #
-subscription: 
+subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
 
-resource_group: 
+resource_group: rg-dss-playground
 
-experiment: optuna-training
+experiment: optuna-mlflow
 
-workspace: 
+workspace: ml-playground
 
 environment: classifier
 
-docker_image: 
+docker_image: azureml/azureml_baa3acfa3b725dede706d62f17962ce5:latest
 
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: 
+  address: 1b25a665dcb5497a8abbc94e1eb67efb.azurecr.io
   #username:
   #password:
 
-datastore: 
+datastore: kzsdpstage
 
-dataset: endo_out_binary_v2/trainset
+dataset: DRV/Anonymization/Besucherzentrum_Out_Seqs/endo_out_binary_v2/trainset
 #help="Directory of training or testing data"
 
-output: model_generator_results/train
+output: MOD/model_generator_results/train
 #help="Output Directory of training or testing"
 
 #valdata:
 #help="Directory of validation data. If not defined data will be split into train+val"
+
+#azureml_mlflow_uri : azureml://westeurope.api.azureml.ms/mlflow/v1.0/subscriptions/15c1afea-319d-4e83-874a-8c989125f3b9/resourceGroups/rg-dss-playground/providers/Microsoft.MachineLearningServices/workspaces/ml-playground
+
+optuna_trials: 10
+##help="Optuna trials number"
+#type=int
+#default=10
 
 dim: 224
 #help="Dimensions of input images after preprocessing (NxN). The user can also input a list of dimensions [H, B]",
@@ -57,16 +64,6 @@ class_names: ['00_safe', '01_critical']
 #help="Git commit hash attributed to the current repository. !! automatically filled !! ",
 #default=""
 
-# ------------------------------------- Azureml arguments ------------------------------------- #
-
-#azureml_flag: True
-#help="parameter to recognize that the scripts are running on azureml. !! automatically filled !!",
-#type=bool
-#default=False
-
-#class_names_azureml: ['00_patient_present', '01_patient_absent']
-#help="parameter to hold the list of class names being passed to azure. !! automatically filled !!",
-#default=None)
 
 # ------------------------------------- Model arguments ------------------------------------- #
 backbone: ResNet50
@@ -77,15 +74,6 @@ backbone: ResNet50
          #'EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3',
          #'EfficientNetB4', 'EfficientNetB5', 'EfficientNetB6', 'EfficientNetB7'],
 #default='')
-
-#head: Yolo
-#help="Type of detection head",
-#choices=['Yolo', 'YoloTiny'],
-#default='Yolo')
-
-#pooling: avg
-#help="Type of pooling",
-#default='avg'
 
 num_classes: 2
 #type=int,

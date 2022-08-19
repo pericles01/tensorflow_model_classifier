@@ -1,25 +1,25 @@
 
 # ------------------------------------- Base arguments ------------------------------------- #
-subscription: 
+subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
 
-resource_group: 
+resource_group: rg-dss-playground
 
 experiment: anonymisation-MCC
 
-workspace: 
+workspace: ml-playground
 
 environment: classifier
 
-docker_image: 
+docker_image: azureml/azureml_aa611e280d9bfe93f6623971723b9e7b:latest
 
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: 
+  address: 1b25a665dcb5497a8abbc94e1eb67efb.azurecr.io
   #username:
   #password:
 
-datastore: 
+datastore: kzsdpstage
 
 indir: ../endo_out_binary_v2/trainset
 #help="Directory of training or testing data"

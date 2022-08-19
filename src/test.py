@@ -28,11 +28,11 @@ from azureml.core import Run
 
 THRESHOLD = .5
 
-def test(conf):
+def test(conf, local=False):
 
     args = Exp(conf)
-
-    azure_tags(args)
+    if not local:
+        azure_tags(args)
 
     if args.csv_eval:
         evaluate_demonstrator_predictions(args.indir, args.csv_eval, args)
@@ -54,13 +54,13 @@ def test(conf):
         if args.class_eval:
             if args.num_labels:
                 print("Evaluating multi-label classifier")
-                evaluate_multi_label_classification(data_path=args.indir, model=classifier.model, args=args)
+                evaluate_multi_label_classification(data_path=args.indir, model=classifier.model, args=args, local=local)
             elif args.num_classes == 2:
                 print("Evaluating binary classifier")
-                evaluate_binary_classification(data_path=args.indir, model=classifier.model, args=args)
+                evaluate_binary_classification(data_path=args.indir, model=classifier.model, args=args, local=local)
             elif args.num_classes > 2:
                 print("Evaluating multi-class classifier")
-                evaluate_multi_class_classification(data_path=args.indir, model=classifier.model, args=args)
+                evaluate_multi_class_classification(data_path=args.indir, model=classifier.model, args=args, local=local)
 
         elif args.class_sort:
             print("Sorting classification output")
@@ -122,7 +122,7 @@ def evaluate_demonstrator_predictions(data_path, preds_path, args):
             preds_all = np.argmax(preds_all, axis=1)
             calculate_multi_class_metrics(preds_all, gts_all, export_dir)
 
-def evaluate_binary_classification(data_path, model, args):
+def evaluate_binary_classification(data_path, model, args, local= False):
     """Calculate various prediction metrics over a test dataset for a binary classification model
     and plot the confusion matrix"""
 
@@ -184,19 +184,19 @@ def evaluate_binary_classification(data_path, model, args):
     with open(output_path + '/test_log.json', 'a') as f:
         json.dump({"Data path": args.indir, "Model path": args.saved_model}, f, indent=2)
 
-    tp, tn, fp, fn = calculate_binary_metrics(labels, gts_all, output_path)
+    tp, tn, fp, fn = calculate_binary_metrics(labels, gts_all, output_path, local=local)
     plot_labels = args.class_names if args.class_names else np.array([0, 1])
     plot.confusion_matrix(cm_input=np.array([[tn, fp], [fn, tp]]), labels=plot_labels,
-                          savepath=output_path + "/Figure_1.png", title='Confusion matrix', normalize=True)
+                          savepath=output_path + "/Figure_1.png", title='Confusion matrix', normalize=True, local=local)
     if args.temp_filter:
-        tp, tn, fp, fn = calculate_binary_metrics(label_filtered, gts_all, output_path, 'binary_metrics_filtered')
+        tp, tn, fp, fn = calculate_binary_metrics(label_filtered, gts_all, output_path, text='binary_metrics_filtered', local=local)
         plot.confusion_matrix(cm_input=np.array([[tn, fp], [fn, tp]]), labels=plot_labels,
-                              savepath=output_path + "/Figure_2.png", title='Confusion matrix filtered', normalize=True)
+                              savepath=output_path + "/Figure_2.png", title='Confusion matrix filtered', normalize=True, local=local)
         plot.sequence_classification_line_plot_v2(np.array([gts_all, raw_output, label_filtered, raw_filtered]),
                                                   "Line plot", THRESHOLD)
 
 
-def evaluate_multi_class_classification(data_path, model, args):
+def evaluate_multi_class_classification(data_path, model, args, local=False):
     """Calculate various prediction metrics over a test dataset for a multiclass classification model
     and plot the confusion matrix"""
 
@@ -266,7 +266,7 @@ def evaluate_multi_class_classification(data_path, model, args):
             confusion_mat[j, k] = np.sum(np.logical_and(gts_all == j, labels == k))
     plot_labels = args.class_names if args.class_names else np.arange(args.num_classes)
     output_path = os.path.join(export_dir, "Figure_1.png")
-    plot.confusion_matrix(cm_input=confusion_mat, labels=plot_labels, savepath=output_path, normalize=True)
+    plot.confusion_matrix(cm_input=confusion_mat, labels=plot_labels, savepath=output_path, normalize=True, local=local)
 
     if args.temp_filter:
         calculate_multi_class_metrics(labels, gts_all, export_dir,
@@ -277,14 +277,14 @@ def evaluate_multi_class_classification(data_path, model, args):
         print("Mean accuracy after filtering: " + str(np.round(np.mean(label_filtered == gts_all), 3)))
         output_path = os.path.join(export_dir, "Figure_2.png")
         plot.confusion_matrix(cm_input=confusion_mat, labels=plot_labels, savepath=output_path,
-                              title="Confusion matrix filtered", normalize=True)
+                              title="Confusion matrix filtered", normalize=True, local=local)
         plot.sequence_classification_line_plot(np.array([gts_all, labels, label_filtered]), args.num_classes,
                                                title="Line plot",
                                                labels=["Ground Truth", "Raw output", "Label filtered"],
                                                subplot=False)
 
 
-def evaluate_multi_label_classification(data_path, model, args):
+def evaluate_multi_label_classification(data_path, model, args, local=False):
     """Calculate various prediction metrics over a test dataset for a multi-label classification model
     and plot the confusion matrix"""
 
@@ -348,9 +348,10 @@ def evaluate_multi_label_classification(data_path, model, args):
             "Mean Certainty (Max(VarRatio))": float(np.round(np.mean(certainty_maxvarratio), 3))
         }
         print(res)
-        #log into Azure
-        for dict in res:
-            run.log(str(dict), res[dict] )
+        if not local:
+            #log into Azure
+            for dict in res:
+                run.log(str(dict), res[dict] )
 
     with open(export_dir + '/test_log.json', 'a') as f:
         json.dump({"Data path": args.indir, "Model path": args.saved_model}, f, indent=2)
@@ -369,7 +370,7 @@ def evaluate_multi_label_classification(data_path, model, args):
         generate_multi_label_confusion_matrices(labels_filtered, gts_all, "_filtered")
 
 
-def calculate_binary_metrics(preds, gts, output_path, text="binary_metrics"):
+def calculate_binary_metrics(preds, gts, output_path, text="binary_metrics", local=False):
     """Return binary classification metrics, given prediction and ground truth"""
     acc = np.mean(preds == gts)
     tp = np.sum(np.logical_and(preds == 1, gts == 1))
@@ -396,9 +397,10 @@ def calculate_binary_metrics(preds, gts, output_path, text="binary_metrics"):
                 "MatthewsCorrelationCoefficient": float(np.round(mcc, 3))}
            }
     print("\n", res)
-    #log into Azure
-    for dict in res[text]:
-        run.log(str(dict), res[text][dict] )
+    if not local:
+        #log into Azure
+        for dict in res[text]:
+            run.log(str(dict), res[text][dict] )
 
     with open(output_path + '/test_log.json', 'a') as f:
         json.dump(res, f, indent=2)
@@ -427,13 +429,13 @@ def calculate_multi_class_metrics(predicted_labels, gts, output_path, text='Mult
 
 
 def calculate_multi_label_classification_metrics(predicted_labels, gts, output_path, text="Multi-label metrics",
-                                                 filtered=False):
+                                                 filtered=False, local=False):
     calculate_binary_metrics(predicted_labels, gts, export_dir,
-                             "Binary metrics filtered" if filtered else "Binary metrics")
+                             "Binary metrics filtered" if filtered else "Binary metrics", local=local)
     for i in range(args.num_labels):
         calculate_binary_metrics(predicted_labels[:, i], gts[:, i], export_dir,
                                  "Binary metrics filtered, label %s" % i if filtered
-                                 else "Binary metrics, label %s" % i)
+                                 else "Binary metrics, label %s" % i, local=local)
     balanced_acc = []
     for i in range(gts.shape[1]):
         balanced_acc.append(balanced_accuracy_score(gts[:, i], predicted_labels[:, i]))
@@ -449,9 +451,10 @@ def calculate_multi_label_classification_metrics(predicted_labels, gts, output_p
         "Per-label balanced accuracy": list(np.round(balanced_acc, 3)),
     }}
     print("\n", res)
-    #log into Azure
-    for dict in res[text]:
-        run.log(str(dict), res[text][dict] )
+    if not local:
+        #log into Azure
+        for dict in res[text]:
+            run.log(str(dict), res[text][dict] )
         
     with open(output_path + '/test_log.json', 'a') as f:
         json.dump(res, f, indent=2)

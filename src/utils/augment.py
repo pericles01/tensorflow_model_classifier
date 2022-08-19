@@ -14,13 +14,16 @@ import shutil
 import ntpath
 import argparse
 
+from yaml import compose
 
 
-def generate_augmentation(args, trials=None):
 
-    augment=[]
-    if trials is None:
-        if len(args.augment) != 0:    
+def generate_augmentation(args):
+
+        augment=[]
+        if args.augment is None:
+            return A.Compose(augment,)
+        else:    
             # ## -- Spatial-level transforms -- #
             if "RandomRotate90" in args.augment:
                 augment.append(A.RandomRotate90(args.augment["RandomRotate90"]))
@@ -79,19 +82,46 @@ def generate_augmentation(args, trials=None):
             if "ToSepia" in args.augment:
                 augment.append(A.Blur(args.augment["ToSepia"]))
 
-    else:
-        augment.extend([
-            A.Rotate(limit=90, p=trials),
-            A.Flip(p=trials),
-            A.RandomResizedCrop(224, 224, p=trials),
-            A.MotionBlur(p=trials),
-            A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=trials),
-            A.ColorJitter(p=trials)
-            ])
-    transforms = A.Compose(augment,)
+            transforms = A.Compose(augment,)
     
-    return transforms
+            return transforms
 
+    
+
+def optuna_aug_tfms(optuna_tfms:bool, trial) -> compose:
+
+    tfms = []
+    if optuna_tfms:
+        def aug_tfms(tfms:list, rdm_rotate:float, flip:float, blur:float, jitter:float, brightness_contrast: tuple) -> list:
+        
+            if rdm_rotate:
+                tfms.append(A.RandomRotate90(p=rdm_rotate))
+            if flip:
+                tfms.append(A.Flip(p=flip))
+            if blur:
+                tfms.append(A.MotionBlur(p=blur))
+            if jitter:
+                tfms.append(A.ColorJitter(p=jitter))
+            if brightness_contrast:
+                tfms.append(A.RandomBrightnessContrast(brightness_limit=brightness_contrast[0], 
+                                                        contrast_limit=brightness_contrast[1], 
+                                                        p=brightness_contrast[2]))
+            return tfms
+
+        rdm_rotate=trial.suggest_float("p_rdm_rotate",low=0.2, high=0.7, step=0.1)
+        flip=trial.suggest_float("p_flip",low=0.2, high=0.7, step=0.1)
+        blur=trial.suggest_float("p_blur",low=0.2, high=0.7, step=0.1) 
+        jitter=trial.suggest_float("p_colorJitter",low=0.2, high=0.7, step=0.1)
+        brightness_contrast= (
+                                trial.suggest_float("brightness_limit",low=0.2, high=0.7, step=0.1),
+                                trial.suggest_float("contrast_limit",low=0.2, high=0.7, step=0.1),
+                                trial.suggest_float("p_rdm_BrightnessContrast",low=0.2, high=0.7, step=0.1)
+                                )
+        augment = aug_tfms(tfms=tfms, rdm_rotate=rdm_rotate, flip=flip, blur=blur, jitter=jitter, brightness_contrast=brightness_contrast)   
+        tfms.extend(augment)
+
+    return A.Compose(tfms,)
+ 
 
 # # Define the set of transformations to be applied on training data
 # transforms = A.Compose([
