@@ -1,11 +1,11 @@
 # ------------------------------------- Base arguments ------------------------------------- #
-subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
+subscription: 
 
-resource_group: rg-dss-playground
+resource_group: 
 
 experiment: anonymisation-classification
 
-workspace: ml-playground
+workspace: 
 
 environment: classifier
 
@@ -14,12 +14,12 @@ docker_image: azureml/azureml_976b98f8b8753df3e1098b820ca78c22:latest
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: 1b25a665dcb5497a8abbc94e1eb67efb.azurecr.io
+  address: 
   #username:
   #password:
 
 
-datastore: kzsdpstage
+datastore: 
 
 dataset: DRV/Anonymization/Besucherzentrum_Out_Seqs/endo_out_binary_v2/testset
 #help="Directory of training or testing data"

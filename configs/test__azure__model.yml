@@ -1,11 +1,11 @@
 # ------------------------------------- Base arguments ------------------------------------- #
-subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
+subscription: 
 
-resource_group: rg-surgicaldataplatform-stage
+resource_group: 
 
 experiment: anonymisation_noisen2
 
-workspace: ml-toms-patient2
+workspace: 
 
 environment: classifier
   #name: classifier
@@ -18,11 +18,11 @@ docker_image: azureml/azureml_d2315b3648086bf8968de11eb0c6c71a:latest
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: kzsdp.azurecr.io
-  username: kzsdp
-  password: 14RjwP=Rq4mFyvmi8V6zM239anQJKPzG
+  address: 
+  username: 
+  password: 
 
-datastore: sdpdatadev
+datastore: 
 
 dataset: DRV/binary_balanced_200822_noisen/testset
 #help="Directory of training or testing data"
