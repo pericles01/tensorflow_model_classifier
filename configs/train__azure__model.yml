@@ -2,32 +2,36 @@
 # ------------------------------------- Base arguments ------------------------------------- #
 subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
 
-resource_group: rg-dss-playground
+resource_group: rg-surgicaldataplatform-stage
 
-experiment: anonymisation-MCC
+experiment: anonymisation_blur2
 
-workspace: ml-playground
+workspace: ml-toms-patient2
 
 environment: classifier
+  #name: classifier
+  #version: 1
 
-docker_image: azureml/azureml_aa611e280d9bfe93f6623971723b9e7b:latest
+Dockerfile: ./classifier.Dockerfile
+
+docker_image: azureml/azureml_d2315b3648086bf8968de11eb0c6c71a:latest
 
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: 1b25a665dcb5497a8abbc94e1eb67efb.azurecr.io
-  #username:
-  #password:
+  address: kzsdp.azurecr.io
+  username: kzsdp
+  password: 14RjwP=Rq4mFyvmi8V6zM239anQJKPzG
 
-datastore: kzsdpstage
+datastore: sdpdatadev
 
-dataset: DRV/Anonymization/Besucherzentrum_Out_Seqs/endo_out_binary_v2/trainset
+dataset: DRV/binary_balanced_200822_blur/trainset
 #help="Directory of training or testing data"
 
-output: MOD/model_generator_results/train
+output: MOD/anonymisation/model_generator_results/train
 #help="Output Directory of training or testing"
 
-#valdata:
+valdata: DRV/binary_balanced_200822_blur/valset
 #help="Directory of validation data. If not defined data will be split into train+val"
 
 dim: 224
@@ -45,7 +49,7 @@ resize: center-crop
 #action='store_true'
 #default= False
 
-class_names: ['00_safe', '01_critical']
+class_names: ['00_absent', '01_present']
 #help="Define class names to include in plots and logs. e.g. --class_names 00_Out 01_In 02_no_sig",
 #nargs='+')
 
@@ -97,21 +101,21 @@ num_classes: 2
 #default=0)
 
 # ------------------------------------- Training arguments ------------------------------------- #
-epochs: 5
+epochs: 40
 #help="Number of training epochs",
 #type=int,
 #default=10)
 
-batch: 16
+batch: 56
 #help="Batch size",
 #type=int,
 #default=16)
 
-validation_split: 0.25
+#validation_split: 0.25
 #type=float,
 #default=0.1)
 
-lr: 0.02
+lr: 0.01
 #help="Initial learning rate for Adam optimizer",
 #type=float,
 #default=0.001)
@@ -125,19 +129,19 @@ dropout: 0.25
 #type=float,
 #default=0)
 
-augment: 
-  - RandomRotate90:
-    - p = 0.4
-  - Flip:
-    - p = 0.7
-  - MotionBlur:
-    - p = 0.4
-  - RandomBrightnessContrast:
-    - p = 0.7
-    - brightness_limit = 0.3
-    - contrast_limit = 0.3
-  - ColorJitter:
-    - p = 0.3
+# augment: 
+#   - RandomRotate90:
+#     - p = 0.4
+#   - Flip:
+#     - p = 0.7
+#   - MotionBlur:
+#     - p = 0.4
+#   - RandomBrightnessContrast:
+#     - p = 0.7
+#     - brightness_limit = 0.3
+#     - contrast_limit = 0.3
+#   - ColorJitter:
+#     - p = 0.3
 
 #label_smoothing: False
 #help="Smooth labels for binary/multi-class classification",

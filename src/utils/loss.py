@@ -35,7 +35,7 @@ class CustomMccMetric(tf.keras.metrics.Metric):
     def __init__(
         self,
         num_classes: FloatTensorLike,
-        name: str = "CustomMccMetric",
+        name: str = "Custom_Mcc",
         dtype: AcceptableDTypes = None,
         **kwargs,
     ):
@@ -119,10 +119,11 @@ def get_metrics(num_classes, num_labels=0):
                 tfa.metrics.F1Score(num_classes=num_classes, average="macro", name='f1_macro'),
                 tfa.metrics.F1Score(num_classes=num_classes, average="weighted", name='f1_weighted')]
     else:
-        return ['accuracy', tfa.metrics.F1Score(num_classes=1, threshold=0.5, average="micro", name='f1_binary')]
-        # return ['accuracy', tfa.metrics.MatthewsCorrelationCoefficient(num_classes=1, name = 'MatthewsCorrelationCoefficient') 
-        #         ,CustomMccMetric(num_classes=num_classes)
-        #         ]
+        # return ['accuracy', tfa.metrics.F1Score(num_classes=1, threshold=0.5, average="micro", name='f1_binary')]
+        return ['accuracy', tfa.metrics.F1Score(num_classes=1, threshold=0.5, average="micro", name='f1_binary'),
+                            tfa.metrics.MatthewsCorrelationCoefficient(num_classes=1, name = 'MCC'), 
+                            CustomMccMetric(num_classes=num_classes)
+                ]
 
 
 def f1_micro_loss_seg(y_true, y_pred):

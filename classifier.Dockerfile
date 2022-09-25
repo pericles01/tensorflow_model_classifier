@@ -12,6 +12,10 @@ ENV PATH $AZUREML_CONDA_ENVIRONMENT_PATH/bin:$PATH
 RUN pip install 'matplotlib==3.3.2' \
                 'albumentations==0.5.2' \
                 'numpy==1.20' \
+                'pandas>=1.1,<1.2' \
+                'scipy>=1.5,<1.6' \
+                'ipykernel~=6.0' \
+                'psutil>=5.8,<5.9' \
                 'tensorboard==2.4.0' \
                 'tensorflow-gpu==2.4.1' \
                 'protobuf==3.20.0'\

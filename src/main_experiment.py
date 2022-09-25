@@ -37,7 +37,9 @@ class Exp:
         self.epochs = conf.get('epochs', 10) # optuna
         self.batch = conf.get('batch', 16) # optuna
         if self.valdata is None:
-            self.validation_split = conf.get('validation_split', 0.1)
+            self.validation_split = conf.get('validation_split', 0.25)
+        else:
+            self.validation_split = 0
         self.lr = conf.get('lr', 0.001) # optuna
         self.lr_decay = conf.get('lr_decay', False)
         self.dropout = conf.get('dropout', 0)

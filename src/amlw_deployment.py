@@ -42,7 +42,7 @@ class AMLWDeployment:
             self._env.python.user_managed_dependencies = True
             print(' * Using local python environment.')
         else:
-            self._env = self._dockerimage_environment()
+            self._env = self._dockerimage_environment() #_dockerfile_environment() #_env_by_name_version()  
             
 
         # TODO: Need to specify version for this!
@@ -88,7 +88,7 @@ class AMLWDeployment:
     #    print('Environment created')
     #    return self
 
-    #def _dockerfile_environment(self, env_name, dockerfile_name) -> AzureAccess:
+    # def _dockerfile_environment(self, env_name, dockerfile_name) -> AzureAccess:
     #    try:
     #       env = Environment.from_dockerfile(env_name, dockerfile_name)
     #       env.register(self.__ws)
@@ -96,6 +96,15 @@ class AMLWDeployment:
     #    except UserErrorException:
     #       print(' ! Error: Environment-file not found')
     #    return env
+    
+    def _dockerfile_environment(self) -> AzureAccess:
+       try:
+          env = Environment.from_dockerfile(self._config.get('environment'), self._config.get('Dockerfile'))
+          #env.register(self.__ws)
+          print(' * Environment created')
+       except UserErrorException:
+          print(' ! Error: Environment-file not found')
+       return env
 
     # TODO: Needs refactoring
     #def conda_environment(self, env_name, existing_env_name, packages = []) -> AzureAccess:
@@ -118,6 +127,25 @@ class AMLWDeployment:
         
             #env.register(self._workspace)
             print(' * Successfully instantiated docker image environment')
+        except UserErrorException:
+            print(' ! Environment not found')
+            return None
+        return env
+    
+    def _env_by_name_version(self):
+        """Uses an already existing environment in the workspace. If 'version' is specified in the config
+        it will explicitely select the version.
+        This is the preferred method to continuously use the environment (if nothing changed in it).
+        """
+        try:
+            if 'version' in self._config.get('environment'):
+                env = Environment.get(workspace=self._workspace,
+                                    name=self._config.get('environment')['name'],
+                                    version=self._config.get('environment')['version'])
+                print(' * Successfully fetched environment from workspace')
+            else:
+                env = Environment.get(workspace=self._workspace,name=self._config.get('environment')['name'])
+                print(' * Successfully fetched environment from workspace')
         except UserErrorException:
             print(' ! Environment not found')
             return None
@@ -234,9 +262,14 @@ class AMLWDeployment:
         if self._is_local_run():
             print(' * Run is deployed on local machine')
             return self._target
-
-        print(' * Run will be deployed to remote compute target ' + self._target)
-        return ComputeTarget(workspace=self._workspace, name=self._target)
+        try:
+            target = ComputeTarget(workspace=self._workspace, name=self._target)
+            print(' * Run will be deployed to remote compute target ' + self._target)
+        
+        except:
+            print('Error: Compute target not found')
+            return None
+        return target
 
     def _set_experiment(self):
         """Instantiate experiment

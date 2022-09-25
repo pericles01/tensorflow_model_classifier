@@ -74,8 +74,19 @@ def train(conf, local=False):
     # Setup logging path and learning decay scheduler
     start_time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = path.join(args.outdir, "logs", start_time_stamp)
+    model_path = os.path.join(args.outdir, "models")
+    if not os.path.exists(model_path):
+        os.makedirs(model_path, exist_ok=True)
+
+    save_path = os.path.join(model_path, start_time_stamp)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
+    #callbacks    
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=0)
     lr_callback = sched.step_lr_decay(args=args)
+    # early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_MCC', patience=5, mode='max') #,restore_best_weights=True #helpful?
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(save_path+"/weights.h5", monitor='val_Custom_Mcc', save_best_only=True, mode='max',
+                                                        save_weights_only=True)
     # Train
     history = model.model.fit(
             train_data.dataset,
@@ -83,7 +94,7 @@ def train(conf, local=False):
             validation_data=valid_data.dataset,
             validation_steps=valid_samples // args.batch,
             epochs=args.epochs,
-            callbacks=[tensorboard_callback, lr_callback]
+            callbacks=[tensorboard_callback, lr_callback, checkpoint]
         )
     if not local:
         #log metrics to azure
@@ -95,13 +106,7 @@ def train(conf, local=False):
     # Save model, training parameters, logs and weights
     end_time_stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    model_path = os.path.join(args.outdir, "models")
-    if not os.path.exists(model_path):
-        os.makedirs(model_path, exist_ok=True)
-
-    save_path = os.path.join(model_path, start_time_stamp)
-    if not os.path.exists(save_path):
-        os.makedirs(save_path, exist_ok=True)
+    
         
     misc.create_model_fit_history_log_file(history.history,
                                                os.path.join(save_path, 'train_log.json'))
@@ -110,7 +115,7 @@ def train(conf, local=False):
                                 num_valid=valid_samples, start_time_stamp=start_time_stamp,
                                 end_time_stamp=end_time_stamp)
     tf.saved_model.save(model.model, save_path)
-    model.model.save_weights(save_path + "/weights.h5")
+    #model.model.save_weights(save_path + "/weights.h5") #done already in checkpoint callback
 
     print("Model saved in " + save_path)
 

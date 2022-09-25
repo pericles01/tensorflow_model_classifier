@@ -1,32 +1,36 @@
 # ------------------------------------- Base arguments ------------------------------------- #
 subscription: 15c1afea-319d-4e83-874a-8c989125f3b9
 
-resource_group: rg-dss-playground
+resource_group: rg-surgicaldataplatform-stage
 
-experiment: anonymisation-MCC
+experiment: anonymisation_noisen2
 
-workspace: ml-playground
+workspace: ml-toms-patient2
 
 environment: classifier
+  #name: classifier
+  #version: 1
 
-docker_image: azureml/azureml_aa611e280d9bfe93f6623971723b9e7b:latest
+Dockerfile: ./classifier.Dockerfile
+
+docker_image: azureml/azureml_d2315b3648086bf8968de11eb0c6c71a:latest
 
 #container registry in the workspace
 #for private containers specify username and password
 container_registry: 
-  address: 1b25a665dcb5497a8abbc94e1eb67efb.azurecr.io
-  #username:
-  #password:
+  address: kzsdp.azurecr.io
+  username: kzsdp
+  password: 14RjwP=Rq4mFyvmi8V6zM239anQJKPzG
 
-datastore: kzsdpstage
+datastore: sdpdatadev
 
-dataset: DRV/Anonymization/Besucherzentrum_Out_Seqs/endo_out_binary_v2/testset
+dataset: DRV/binary_balanced_200822_noisen/testset
 #help="Directory of training or testing data"
 
-output: MOD/model_generator_results/test
+output: MOD/anonymisation/model_generator_results/test
 #help="Output Directory of training or testing"
 
-saved_model: MOD/model_generator_results/train/anonymisation-MCC_1657694838_ce491f31/models/20220713-065638
+saved_model: MOD/anonymisation/model_generator_results/train/anonymisation_noisen2_1663760599_830d00f5/models/20220921-152615
 #help="Directory of the saved model. Used for test.py",
 #default=""
 
@@ -35,7 +39,7 @@ saved_model: MOD/model_generator_results/train/anonymisation-MCC_1657694838_ce49
 #action='store_true'
 #default= False
 
-class_names: ['00_safe', '01_critical']
+class_names: ['00_absent', '01_present']
 #help="Define class names to include in plots and logs. e.g. --class_names 00_Out 01_In 02_no_sig",
 #nargs='+')
 
